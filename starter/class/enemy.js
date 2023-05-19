@@ -3,7 +3,10 @@ const {Character} = require('./character');
 
 class Enemy extends Character {
   constructor(name, description, currentRoom) {
-    // Fill this in
+    super(name, description, currentRoom);
+    this.cooldown = 3000;
+    this.attackTarget = null;
+    this.justMoved = true;
   }
 
   setPlayer(player) {
@@ -12,7 +15,18 @@ class Enemy extends Character {
 
 
   randomMove() {
-    // Fill this in
+    const possibleExits = this.currentRoom.getExits();
+    const randomDirection = function(){
+        let min = Math.ceil(0);
+        let max = Math.floor(possibleExits.length - 1);
+        return Math.floor(Math.random() * (max - min + 1) + min);
+    }
+    let nextRoomKey = possibleExits[randomDirection()];
+    let nextRoom = this.currentRoom.getRoomInDirection(nextRoomKey);
+    this.currentRoom = nextRoom;
+    this.cooldown = 3000;
+    this.justMoved = true;
+    this.act();
   }
 
   takeSandwich() {
@@ -27,29 +41,40 @@ class Enemy extends Character {
   }
 
   rest() {
-    // Wait until cooldown expires, then act
+    const cd = this.cooldown;
     const resetCooldown = function() {
       this.cooldown = 0;
       this.act();
     };
-    setTimeout(resetCooldown, this.cooldown);
+
+    const reset = resetCooldown.bind(this);
+
+    setTimeout(reset, cd);
   }
 
   attack() {
-    // Fill this in
+    this.attackTarget.applyDamage(this.strength);
+    this.cooldown = 3000;
+    this.act();
   }
 
   applyDamage(amount) {
-    // Fill this in
+    this.health -= amount;
+    console.log(`${this.name} is hit for ${amount} damage!`);
+    this.attackTarget = this.player;
   }
 
 
 
   act() {
     if (this.health <= 0) {
-      // Dead, do nothing;
+      this.die();
     } else if (this.cooldown > 0) {
       this.rest();
+    } else if (this.attackTarget === this.player) {
+      this.attack();
+    } else if (this.justMoved === false){
+      this.randomMove();
     } else {
       this.scratchNose();
       this.rest();
@@ -60,10 +85,9 @@ class Enemy extends Character {
 
 
   scratchNose() {
-    this.cooldown += 1000;
-
+    this.cooldown += 2000;
+    this.justMoved = false;
     this.alert(`${this.name} scratches its nose`);
-
   }
 
 
